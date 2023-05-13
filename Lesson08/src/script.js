@@ -71,7 +71,7 @@ window.addEventListener("dblclick", ()=>{
             document.exitFullscreen();
         }else if(document.webkitExitFullscreen){
             document.webkitExitFullscreen();
-        }
+        } 
     }
 }
 )
