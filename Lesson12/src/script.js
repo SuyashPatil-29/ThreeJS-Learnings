@@ -131,6 +131,7 @@ window.addEventListener('resize', () =>
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 })
 
+
 /**
  * Camera
  */
@@ -165,11 +166,11 @@ const tick = () =>
 
     //rotate objects
     sphere.rotation.y = 0.1 * elapsedTime
-    plane.rotation.y = 0.2 * elapsedTime
+    // plane.rotation.y = 0.2 * elapsedTime
     torus.rotation.y = 0.4 * elapsedTime
 
     sphere.rotation.x = 0.1 * elapsedTime
-    plane.rotation.x = 0.2 * elapsedTime
+    // plane.rotation.x = 0.2 * elapsedTime
     torus.rotation.x = 0.4 * elapsedTime
 
     // Update controls
