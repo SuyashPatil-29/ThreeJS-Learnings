@@ -46,6 +46,21 @@ const grassAmbientOcclusionTexture = textureLoader.load('/textures/grass/ambient
 const grassNormalTexture = textureLoader.load('/textures/grass/normal.jpg')
 const grassRoughnessTexture = textureLoader.load('/textures/grass/roughness.jpg')
 
+grassColorTexture.repeat.set(8,8)
+grassAmbientOcclusionTexture.repeat.set(8,8)
+grassNormalTexture.repeat.set(8,8)
+grassRoughnessTexture.repeat.set(8,8)
+
+grassColorTexture.wrapS = THREE.RepeatWrapping
+grassAmbientOcclusionTexture.wrapS = THREE.RepeatWrapping
+grassNormalTexture.wrapS = THREE.RepeatWrapping
+grassRoughnessTexture.wrapS = THREE.RepeatWrapping
+
+grassColorTexture.wrapT = THREE.RepeatWrapping
+grassAmbientOcclusionTexture.wrapT = THREE.RepeatWrapping
+grassNormalTexture.wrapT = THREE.RepeatWrapping
+grassRoughnessTexture.wrapT = THREE.RepeatWrapping
+
 /**
  * House
  */
@@ -54,7 +69,7 @@ scene.add(house)
 
 // Walls
 const walls = new THREE.Mesh(
-    new THREE.BoxGeometry(4,2.5,4),
+    new THREE.BoxGeometry(4,2.5,4, 100, 100),
     new THREE.MeshStandardMaterial({map: bricksColorTexture})
 )
 walls.material.aoMap = bricksAmbientOcclusionTexture
@@ -62,8 +77,11 @@ walls.material.aoMapIntensity = 1
 walls.material.normalMap = bricksNormalTexture
 walls.material.roughnessMap = bricksRoughnessTexture
 
+walls.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(walls.geometry.attributes.uv.array, 2))
+walls.material.displacementScale = 0.1
 house.add(walls)
 walls.position.set(0,1.249,0)
+
 
 //Roof
 
@@ -155,6 +173,7 @@ for(let i = 0; i < 50; i++){
     grave.rotation.z = (Math.random()-0.5)*0.3
     graves.add(grave)
     grave.castShadow = true
+    grave.receiveShadow = true
 }
 
 // Floor
@@ -166,7 +185,7 @@ floor.material.aoMap = grassAmbientOcclusionTexture;
 floor.material.aoMapIntensity = 1;
 floor.material.normalMap = grassNormalTexture;
 floor.material.roughnessMap = grassRoughnessTexture;
-floor.receiveShadow = true
+floor.geometry.setAttribute('uv2', new THREE.Float32BufferAttribute(walls.geometry.attributes.uv.array, 2))
 
 floor.rotation.x = - Math.PI * 0.5
 floor.position.y = 0
@@ -195,14 +214,22 @@ gui.add(moonLight.position, 'x').min(- 5).max(5).step(0.001)
 gui.add(moonLight.position, 'y').min(- 5).max(5).step(0.001)
 gui.add(moonLight.position, 'z').min(- 5).max(5).step(0.001)
 scene.add(moonLight)
-moonLight.castShadow = true
 
 //Door Light 
 
 const doorLight = new THREE.PointLight("#ff7d46", 1.5, 7)
 doorLight.position.set(0,2.2,2.7)
 house.add(doorLight)
-doorLight.castShadow = true
+
+
+//Ghosts
+
+const ghost1 = new THREE.PointLight("#ff00ff", 2, 3)
+const ghost2 = new THREE.PointLight("#00ffff", 2, 3)
+const ghost3 = new THREE.PointLight("#ffff00", 2, 3)
+
+scene.add(ghost1, ghost2, ghost3)
+
 
 /**
  * Sizes
@@ -251,6 +278,51 @@ renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 renderer.setClearColor("#262837")
 renderer.shadowMap.enabled = true
+
+//Shadows
+doorLight.castShadow = true
+moonLight.castShadow = true
+ghost1.castShadow = true
+ghost2.castShadow = true
+ghost3.castShadow = true
+
+walls.castShadow = true
+bush1.castShadow = true
+bush2.castShadow = true
+bush3.castShadow = true
+bush4.castShadow = true
+
+floor.receiveShadow = true
+
+doorLight.shadow.mapSize.width = 256
+doorLight.shadow.mapSize.height = 256
+doorLight.shadow.camera.far = 7
+
+ghost1.shadow.mapSize.width = 256
+ghost1.shadow.mapSize.height = 256
+ghost1.shadow.camera.far = 7
+
+ghost2.shadow.mapSize.width = 256
+ghost2.shadow.mapSize.height = 256
+ghost2.shadow.camera.far = 7
+
+ghost3.shadow.mapSize.width = 256
+ghost3.shadow.mapSize.height = 256
+ghost3.shadow.camera.far = 7
+
+moonLight.shadow.mapSize.width = 256
+moonLight.shadow.mapSize.height = 256
+moonLight.shadow.camera.far = 7
+moonLight.shadow.camera.left = -7
+moonLight.shadow.camera.right = 7
+moonLight.shadow.camera.top = 7
+moonLight.shadow.camera.bottom = -7
+moonLight.shadow.camera.near = 0.1
+moonLight.shadow.camera.far = 15
+moonLight.shadow.bias = -0.05
+moonLight.shadow.radius = 0.05
+
+
 /**
  * Animate
  */
@@ -262,6 +334,25 @@ const tick = () =>
 
     // Update controls
     controls.update()
+
+    // Update Ghosts
+    const ghost1Angle = elapsedTime*0.5
+    ghost1.position.x = Math.cos(ghost1Angle)*4
+    ghost1.position.z = Math.sin(ghost1Angle)*4
+    ghost1.position.y = Math.sin(elapsedTime*3)
+
+    const ghost2Angle = - elapsedTime * 0.32
+    ghost2.position.x = Math.cos(ghost2Angle)*5
+    ghost2.position.z = Math.sin(ghost2Angle)*5
+    ghost2.position.y = Math.sin(elapsedTime*4) + Math.sin(elapsedTime*2.5)
+
+    const ghost3Angle = -elapsedTime * 0.18
+    ghost3.position.x = Math.cos(ghost3Angle)*(7 + Math.sin(elapsedTime*0.32))
+    ghost3.position.z = Math.sin(ghost3Angle)*(7 + Math.sin(elapsedTime*0.5))
+    ghost3.position.y = Math.sin(elapsedTime*5) + Math.sin(elapsedTime*2.5)
+
+    // Update Moon
+
 
     // Render
     renderer.render(scene, camera)
