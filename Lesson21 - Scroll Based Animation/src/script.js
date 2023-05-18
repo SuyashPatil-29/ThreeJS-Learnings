@@ -1,6 +1,7 @@
 import './style.css'
 import * as THREE from 'three'
 import * as dat from 'lil-gui'
+import gsap from 'gsap'
 
 const gui = new dat.GUI()
 
@@ -177,6 +178,16 @@ window.addEventListener("scroll", ()=>{
 
     if (newSection != currentSection){
         currentSection = newSection
+
+        gsap.to(
+            sectionMeshes[currentSection].rotation, {
+                duration: 1.5,
+                ease : "power2.inOut",
+                x : "+=6",
+                y : "+=3",
+                z: "+=1.5"
+            }
+        )
     }
 })
 
@@ -226,9 +237,8 @@ const tick = () =>
     //Animate Meshes
 
     sectionMeshes.map((mesh)=>{
-        mesh.rotation.x = elapsedTime*0.2
-        mesh.rotation.y = elapsedTime*0.22
-
+        mesh.rotation.x += deltaTime*0.2
+        mesh.rotation.y += deltaTime*0.22
     })
 
     // Render
