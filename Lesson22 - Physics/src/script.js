@@ -2,7 +2,7 @@ import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
-import CANNON from "cannon"
+import CANNON, { SAPBroadphase } from "cannon"
 
 /**
  * Debug
@@ -25,18 +25,37 @@ const textureLoader = new THREE.TextureLoader()
 const cubeTextureLoader = new THREE.CubeTextureLoader()
 
 const environmentMapTexture = cubeTextureLoader.load([
-    '/textures/environmentMaps/0/px.png',
-    '/textures/environmentMaps/0/nx.png',
-    '/textures/environmentMaps/0/py.png',
-    '/textures/environmentMaps/0/ny.png',
-    '/textures/environmentMaps/0/pz.png',
-    '/textures/environmentMaps/0/nz.png'
+    '/textures/environmentMaps/2/px.png',
+    '/textures/environmentMaps/2/nx.png',
+    '/textures/environmentMaps/2/py.png',
+    '/textures/environmentMaps/2/ny.png',
+    '/textures/environmentMaps/2/pz.png',
+    '/textures/environmentMaps/2/nz.png'
 ])
+
+//Sounds
+
+const hitSound = new Audio("/sounds/hit.mp3")
+
+const playSound = (collision) =>{
+
+    const impactStrength = collision.contact.getImpactVelocityAlongNormal()
+
+    if(impactStrength>=1.5){
+        hitSound.volume = Math.abs(impactStrength*Math.random() - 0.1) / 8
+        hitSound.currentTime = 0
+        hitSound.play()
+    }
+}
 
 //Physics World 
 
 const world = new CANNON.World()
 world.gravity.set(0, -9.82, 0)
+world.broadphase= new SAPBroadphase(world)
+world.allowSleep = true
+
+// Materials
 
 const objectsToUpdate = []
 
@@ -49,7 +68,7 @@ const defaultContactMaterial = new CANNON.ContactMaterial(
     defaultMaterial,
     {
         friction: 0.1,
-        restitution: 0.7,
+        restitution: 0.4,
     })
     
     world.addContactMaterial(defaultContactMaterial)
@@ -85,6 +104,8 @@ const defaultContactMaterial = new CANNON.ContactMaterial(
           position: new CANNON.Vec3(0,3,0),
           shape : sphereShape
         })
+
+
       sphereBody.position.copy(position)
       world.addBody(sphereBody)
 
@@ -93,6 +114,7 @@ const defaultContactMaterial = new CANNON.ContactMaterial(
         body : sphereBody
       })
     } 
+
     
     
     scene.background = environmentMapTexture
@@ -104,22 +126,25 @@ const defaultContactMaterial = new CANNON.ContactMaterial(
   })
 
   const boxGeometry = new THREE.BoxGeometry(1,1,1)
-  const createBoxes = (position)=>{
+  const createBoxes = (width, height, depth, position)=>{
 
     const boxMesh = new THREE.Mesh(boxGeometry, sphereMaterial)
-    boxMesh.position.copy(position)
+    boxMesh.position.copy(width, height, depth, position)
     boxMesh.material.roughness = 0.3
     boxMesh.material.metalness = 0.4
     boxMesh.castShadow = true;
     scene.add(boxMesh)
 
-    const boxShape = new CANNON.Box(new CANNON.Vec3(0.5,0.5,0.5))
+    const boxShape = new CANNON.Box(new CANNON.Vec3(width/2, height/2, depth/2))
     const boxBody = new CANNON.Body({
         mass: 1,
         position: new CANNON.Vec3(0,3,3),
         shape: boxShape
   })
+
   boxBody.position.copy(position)
+  boxBody.addEventListener("collide", playSound)
+  boxMesh.scale.set(width, height, depth)
   world.addBody(boxBody)
 
   objectsToUpdate.push({
@@ -135,7 +160,7 @@ const defaultContactMaterial = new CANNON.ContactMaterial(
       new CANNON.Vec3(-1,0,0),
       Math.PI * 0.5
   ) 
-   
+
   world.addBody(floorBody)  
  
 
@@ -226,14 +251,23 @@ const debugObjects = {
         createSphere(0.5 , {x: (Math.random()-0.5)*3, y:3, z:(Math.random()-0.5)*3})
     },
     createBox: ()=>{
-        createBoxes({x: (Math.random()-0.5)*3, y:3, z:(Math.random()-0.5)*3})
+        createBoxes(Math.random(),Math.random(),Math.random(),{x: (Math.random()-0.5)*3, y:3, z:(Math.random()-0.5)*3})
+    },
+    reset : ()=>{
+        objectsToUpdate.map(object =>{
+            object.body.removeEventListener("collide", playSound)
+            world.removeBody(object.body)
+            scene.remove(object.mesh)
+        })
+        objectsToUpdate.splice(0, objectsToUpdate.length)
     }
 }
 
 gui.add(debugObjects, "createSpheres").name("Create Sphere")
 gui.add(debugObjects, "createBox").name("Create Box")
+gui.add(debugObjects, "reset").name("Remove All")
 
-console.log(objectsToUpdate);
+
 
 /**
  * Animate
@@ -247,7 +281,7 @@ const tick = () =>
     const deltaTime = elapsedTime - oldElapsedTime
     oldElapsedTime = elapsedTime
 
-    // Update controls
+    // Update controls 
     controls.update()
 
     //Adding wind force 
@@ -258,6 +292,7 @@ const tick = () =>
     //Update Objects
     objectsToUpdate.map(object=>{
         object.mesh.position.copy(object.body.position)
+        object.mesh.quaternion.copy(object.body.quaternion)
     })
 
     // objectsToUpdate.map(object=>{
